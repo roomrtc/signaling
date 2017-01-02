@@ -1,0 +1,34 @@
+{
+  "name": "signaling",
+  "version": "0.9.1",
+  "description": "A simple signaling server for clients to connect and do signaling for RoomRTC",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/start.js | tap-spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/roomrtc/signaling.git"
+  },
+  "keywords": [
+    "roomrtc",
+    "signaling",
+    "webrtc"
+  ],
+  "author": "Vunb",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/roomrtc/signaling/issues"
+  },
+  "homepage": "https://github.com/roomrtc/signaling#readme",
+  "devDependencies": {
+    "supertest": "^2.0.1",
+    "tap-spec": "^4.1.1",
+    "tape": "^4.6.3"
+  },
+  "dependencies": {
+    "config": "1.24.x",
+    "socket.io": "1.7.x",
+    "uuid": "3.0.x"
+  }
+}
