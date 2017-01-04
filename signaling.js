@@ -139,7 +139,10 @@ module.exports = function Signaling(server, config) {
 
 
     function clientsInRoom(name) {
-        return io.sockets.clients(name).length;
+        // return io.sockets.clients(name).length;
+        var adapter = io.nsps["/"].adapter;
+        var clients = adapter.rooms[name] || {};
+        return Object.keys(clients).length;
     }
 
     function describeRoom(name) {
