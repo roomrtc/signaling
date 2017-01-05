@@ -20,6 +20,7 @@ module.exports = function Signaling(server, config) {
     io.sockets.on("connection", function (client) {
 
         client.resources = {
+            profile: {},
             video: true,
             audio: false,
             screen: false
@@ -147,15 +148,21 @@ module.exports = function Signaling(server, config) {
 
     function describeRoom(name) {
         var adapter = io.nsps["/"].adapter;
-        var clients = adapter.rooms[name] || {};
+        var room = adapter.rooms[name] || {};
+        var sockets = room.sockets || {};
+        var current = Object.keys(sockets).length;
         var result = {
+            roomName: name,
+            roomCount: current,
             clients: {}
         }
 
-        Object.keys(clients).forEach(function (id) {
+        Object.keys(sockets).forEach(function (id) {
             var client = adapter.nsp.connected[id];
-            result.clients[id] = client.resources;
+            if (client) {
+                result.clients[id] = client.resources;
+            }
         });
-
+        return result;
     }
 }
