@@ -1,7 +1,7 @@
 {
   "name": "signaling",
   "version": "0.9.3",
-  "description": "A simple signaling server for clients to connect and do signaling for RoomRTC",
+  "description": "A simple signaling server for RoomRTC",
   "main": "index.js",
   "scripts": {
     "test": "node test/start.js | tap-spec"
