@@ -4,7 +4,8 @@
   "description": "A simple signaling server for RoomRTC",
   "main": "index.js",
   "scripts": {
-    "test": "node test/start.js | tap-spec"
+    "test": "node test/start.js | tap-spec",
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
