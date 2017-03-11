@@ -1,7 +1,8 @@
-var socketio = require("socket.io"),
-    crypto = require("crypto"),
-    uuid = require("uuid");
+'use strict';
 
+var socketio = require('socket.io'),
+    crypto = require('crypto'),
+    uuid = require('uuid');
 
 /**
  * Utility
@@ -19,6 +20,9 @@ module.exports = function Signaling(server, options) {
     if (!(this instanceof Signaling)) {
         return new Signaling(server, options);
     }
+
+    // inherits constructor
+
 
     // default config
     this.config = {
@@ -41,7 +45,7 @@ module.exports = function Signaling(server, options) {
     self.io = io;
     self.config = this.config;
 
-    io.sockets.on("connection", function (client) {
+    io.sockets.on('connection', function (client) {
 
         client.resources = {
             profile: {},
@@ -51,7 +55,7 @@ module.exports = function Signaling(server, options) {
         }
 
         // send private message to another id
-        client.on("message", function (msg) {
+        client.on('message', function (msg) {
             if (!msg) return;
 
             var toClient = io.to(msg.to);
@@ -61,23 +65,23 @@ module.exports = function Signaling(server, options) {
             }
 
             msg.from = client.id;
-            toClient.emit("message", msg);
+            toClient.emit('message', msg);
 
         });
 
-        client.on("shareScreen", function () {
+        client.on('shareScreen', function () {
             client.resources.screen = true;
         });
 
-        client.on("unshareScreen", function (type) {
+        client.on('unshareScreen', function (type) {
             client.resources.screen = false;
-            removeFeed("screen");
+            removeFeed('screen');
         });
 
         function removeFeed(type) {
             if (client.room) {
                 // remove resources type in the room
-                io.sockets.in(client.room).emit("remove", {
+                io.sockets.in(client.room).emit('remove', {
                     id: client.id,
                     type: type
                 });
@@ -91,13 +95,13 @@ module.exports = function Signaling(server, options) {
 
         function joinRoom(name, cb) {
             // sanity check
-            if (typeof name !== "string") return; // do nothing
+            if (typeof name !== 'string') return; // do nothing
 
             // check  max clients in the room
             var current = clientsInRoom(name);
             var config = self.config;
             if (config.roomMaxClients > 0 && current >= config.roomMaxClients) {
-                safeCb(cb)("full");
+                safeCb(cb)('full');
                 return;
             }
             // leave all rooms
@@ -110,24 +114,24 @@ module.exports = function Signaling(server, options) {
         /**
          * Event: join, leave, disconnect
          */
-        client.on("join", joinRoom);
-        client.on("leave", function () {
+        client.on('join', joinRoom);
+        client.on('leave', function () {
             removeFeed();
         });
 
-        // we don't want to pass "leave" directly because the
-        // event type string of "socket end" gets passed too.
+        // we don't want to pass 'leave' directly because the
+        // event type string of 'socket end' gets passed too.
         client.on('disconnect', function () {
             removeFeed();
         });
 
-        client.on("create", function (name, cb) {
+        client.on('create', function (name, cb) {
             name = name || uuid.v4();
 
             // check room is exists
-            var room = io.nsps["/"].adapter.rooms[name];
+            var room = io.nsps['/'].adapter.rooms[name];
             if (room && room.length) {
-                safeCb(cb)("taken");
+                safeCb(cb)('taken');
             } else {
                 joinRoom(name);
                 safeCb(cb)(null, name);
@@ -145,7 +149,7 @@ module.exports = function Signaling(server, options) {
             turnservers.forEach(function (server) {
                 var hmac = crypto.createHmac('sha1', server.secret);
                 // default to 86400 seconds timeout unless specified
-                var username = Math.floor(new Date().getTime() / 1000) + (server.expiry || 86400) + "";
+                var username = Math.floor(new Date().getTime() / 1000) + (server.expiry || 86400) + '';
                 hmac.update(username);
                 credentials.push({
                     username: username,
@@ -161,20 +165,20 @@ module.exports = function Signaling(server, options) {
         }
 
         // notify client about stun and turn servers
-        client.emit("iceservers", iceInfo);
+        client.emit('iceservers', iceInfo);
 
     });
 
 
     function clientsInRoom(name) {
         // return io.sockets.clients(name).length;
-        var adapter = io.nsps["/"].adapter;
+        var adapter = io.nsps['/'].adapter;
         var clients = adapter.rooms[name] || {};
         return Object.keys(clients).length;
     }
 
     function describeRoom(name) {
-        var adapter = io.nsps["/"].adapter;
+        var adapter = io.nsps['/'].adapter;
         var room = adapter.rooms[name] || {};
         var sockets = room.sockets || {};
         var current = Object.keys(sockets).length;
