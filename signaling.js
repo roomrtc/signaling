@@ -1,8 +1,11 @@
 'use strict';
 
-var socketio = require('socket.io'),
-    crypto = require('crypto'),
-    uuid = require('uuid');
+const util = require('util');
+const ws = require('socket.io');
+const crypto = require('crypto');
+const uuid = require('uuid');
+
+const EventEmitter = require('events');
 
 /**
  * Utility
@@ -15,14 +18,14 @@ function safeCb(cb) {
     }
 }
 
-module.exports = function Signaling(server, options) {
+function Signaling(server, options) {
     // check user is missing `new` keyword.
     if (!(this instanceof Signaling)) {
         return new Signaling(server, options);
     }
 
     // inherits constructor
-
+    EventEmitter.call(this);
 
     // default config
     this.config = {
@@ -40,7 +43,7 @@ module.exports = function Signaling(server, options) {
     }
 
     var self = this;
-    var io = socketio.listen(server);
+    var io = ws.listen(server);
 
     self.io = io;
     self.config = this.config;
@@ -55,18 +58,28 @@ module.exports = function Signaling(server, options) {
         }
 
         // send private message to another id
-        client.on('message', function (msg) {
+        client.on('message', function (msg, cb) {
             if (!msg) return;
 
-            var toClient = io.to(msg.to);
-            if (!toClient) {
-                // TODO: send msg to a room ?
-                return;
+            var hasListener = self.emit('message', client, msg);
+            if (!hasListener) {
+                console.log('No listener: ', msg);
+                var toClient = io.to(msg.to);
+                if (!toClient || !msg.to) {
+                    safeCb(cb)(null, {
+                        type: 'info',
+                        message: 'no specify a client, should send to the room !'
+                    });
+                    return;
+                }
+
+                msg.from = client.id;
+                toClient.emit('message', msg);
+                safeCb(cb)(null, {
+                    type: 'info',
+                    message: 'the message is sent'
+                });
             }
-
-            msg.from = client.id;
-            toClient.emit('message', msg);
-
         });
 
         client.on('shareScreen', function () {
@@ -109,21 +122,24 @@ module.exports = function Signaling(server, options) {
             safeCb(cb)(null, describeRoom(name));
             client.join(name);
             client.room = name;
+            self.emit('join', name, client);
+        }
+
+        function leaveRoom() {
+            removeFeed();
+            self.emit('leave', client, clientsInRoom(client.room));
         }
 
         /**
          * Event: join, leave, disconnect
          */
         client.on('join', joinRoom);
-        client.on('leave', function () {
-            removeFeed();
-        });
+        client.on('leave', leaveRoom);
+        client.on('bye', leaveRoom);
 
         // we don't want to pass 'leave' directly because the
         // event type string of 'socket end' gets passed too.
-        client.on('disconnect', function () {
-            removeFeed();
-        });
+        client.on('disconnect', leaveRoom);
 
         client.on('create', function (name, cb) {
             name = name || uuid.v4();
@@ -166,7 +182,7 @@ module.exports = function Signaling(server, options) {
 
         // notify client about stun and turn servers
         client.emit('iceservers', iceInfo);
-
+        self.emit('connection', client);
     });
 
 
@@ -197,3 +213,8 @@ module.exports = function Signaling(server, options) {
         return result;
     }
 }
+
+util.inherits(Signaling, EventEmitter);
+
+Signaling.Signaling = Signaling;
+module.exports = Signaling;
