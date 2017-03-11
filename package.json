@@ -1,6 +1,6 @@
 {
   "name": "signaling",
-  "version": "0.9.4",
+  "version": "0.10.0",
   "description": "A simple signaling server for RoomRTC",
   "main": "index.js",
   "scripts": {
@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/roomrtc/signaling#readme",
   "devDependencies": {
+    "socket.io-client": "1.7.x",
     "supertest": "^2.0.1",
     "tap-spec": "^4.1.1",
     "tape": "^4.6.3"
