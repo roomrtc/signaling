@@ -14,8 +14,32 @@ function safeCb(cb) {
     }
 }
 
-module.exports = function Signaling(server, config) {
+module.exports = function Signaling(server, options) {
+    // check user is missing `new` keyword.
+    if (!(this instanceof Signaling)) {
+        return new Signaling(server, options);
+    }
+
+    // default config
+    this.config = {
+        stunservers: [],
+        turnservers: [],
+        isMediaServer: false,
+        roomMaxClients: 6
+    }
+
+    // override default config
+    for (let opt in options) {
+        if (options.hasOwnProperty(opt)) {
+            this.config[opt] = options[opt];
+        }
+    }
+
+    var self = this;
     var io = socketio.listen(server);
+
+    self.io = io;
+    self.config = this.config;
 
     io.sockets.on("connection", function (client) {
 
@@ -71,7 +95,8 @@ module.exports = function Signaling(server, config) {
 
             // check  max clients in the room
             var current = clientsInRoom(name);
-            if (config.rooms && config.rooms.maxClients > 0 && current >= config.rooms.maxClients) {
+            var config = self.config;
+            if (config.roomMaxClients > 0 && current >= config.roomMaxClients) {
                 safeCb(cb)("full");
                 return;
             }
@@ -113,6 +138,7 @@ module.exports = function Signaling(server, config) {
         // the process is described in draft-uberti-behave-turn-rest
         var credentials = [];
         // allow selectively vending turn credentials based on origin.
+        var config = self.config;
         var origin = client.handshake.headers.origin;
         if (!config.turnorigins || config.turnorigins.indexOf(origin) !== -1) {
             var turnservers = config.turnservers || [];

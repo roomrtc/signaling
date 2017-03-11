@@ -11,5 +11,5 @@ var server = http.createServer(function (req, res) {
 server.listen(port, function () {
     console.log("server is running at: ", port);
 });
-signaling(server, config);
+signaling(server);
 console.log("Config signaling server is done");
