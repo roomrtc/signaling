@@ -10,6 +10,8 @@ module.exports = signalingServer;
 var dir = '../test/spec/';
 [
   'joinMsgTest',
+  'messageMsgTest',
+  'serverMsgTest',
   'endTest'
 ].forEach((script) => {
   require(path.join(dir, script));
