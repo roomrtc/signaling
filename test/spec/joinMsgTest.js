@@ -10,11 +10,12 @@ var socketOption = {
 }
 
 test('it should receive the number of members after join to a room', (t) => {
+    var clientA, clientB, clientC;
     Promise.resolve(1)
         .then(() => {
             // client A require to join a pretty room
             return new Promise((resolve, reject) => {
-                var clientA = io.connect(socketUrl, socketOption);
+                clientA = io.connect(socketUrl, socketOption);
                 clientA.on('connect', () => {
                     clientA.emit('join', 'prettyRoom', (err, roomData) => {
                         resolve(roomData);
@@ -27,7 +28,7 @@ test('it should receive the number of members after join to a room', (t) => {
             t.equal(roomDataA.roomCount, 0, 'clientA --> number of members in prettyRoom should be 0');
             // client B require to join a pretty room
             return new Promise((resolve, reject) => {
-                var clientB = io.connect(socketUrl, socketOption);
+                clientB = io.connect(socketUrl, socketOption);
                 clientB.on('connect', () => {
                     clientB.emit('join', 'prettyRoom', (err, roomData) => {
                         resolve(roomData);
@@ -40,7 +41,7 @@ test('it should receive the number of members after join to a room', (t) => {
             t.equal(roomDataB.roomCount, 1, 'clientB --> number of members in prettyRoom should be 1');
             // client C require to join an other room
             return new Promise((resolve, reject) => {
-                var clientC = io.connect(socketUrl, socketOption);
+                clientC = io.connect(socketUrl, socketOption);
                 clientC.on('connect', () => {
                     clientC.emit('join', 'otherRoom', (err, roomData) => {
                         resolve(roomData);
@@ -51,6 +52,9 @@ test('it should receive the number of members after join to a room', (t) => {
         .then((roomDataC) => {
             t.equal(roomDataC.roomName, 'otherRoom', 'clientC --> otherRoom');
             t.equal(roomDataC.roomCount, 0, 'clientC --> number of members in otherRoom should be 0');
+            clientA.emit('bye');
+            clientB.emit('bye');
+            clientC.emit('bye');
             t.end();
         })
         .catch(err => {
