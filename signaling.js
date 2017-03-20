@@ -66,11 +66,10 @@ function Signaling(server, options) {
                 console.log('No listener: ', msg);
                 var toClient = io.to(msg.to);
                 if (!toClient || !msg.to) {
-                    safeCb(cb)(null, {
+                    return safeCb(cb)(null, {
                         type: 'info',
                         message: 'no specify a client, should send to the room !'
                     });
-                    return;
                 }
 
                 msg.from = client.id;
