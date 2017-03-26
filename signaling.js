@@ -4,8 +4,9 @@ const util = require('util');
 const ws = require('socket.io');
 const crypto = require('crypto');
 const uuid = require('uuid');
+const events = require('eventemitter2');
 
-const EventEmitter = require('events');
+const EventEmitter = events.EventEmitter2;
 
 /**
  * Utility
@@ -107,14 +108,15 @@ function Signaling(server, options) {
 
         function joinRoom(name, cb) {
             // sanity check
-            if (typeof name !== 'string') return; // do nothing
+            if (typeof name !== 'string') {
+                return safeCb(cb)('name must be a string');
+            }
 
             // check  max clients in the room
             var current = clientsInRoom(name);
             var config = self.config;
             if (config.roomMaxClients > 0 && current >= config.roomMaxClients) {
-                safeCb(cb)('full');
-                return;
+                return safeCb(cb)('full');
             }
             // leave all rooms
             removeFeed();
