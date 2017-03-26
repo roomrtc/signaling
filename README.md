@@ -3,6 +3,9 @@ signaling
 
 A simple signaling server for RoomRTC
 
+[![npm version](https://img.shields.io/npm/v/signaling.svg?style=flat)](https://www.npmjs.com/package/signaling)
+[![Travis](https://travis-ci.org/roomrtc/signaling.svg?branch=master)](https://travis-ci.org/roomrtc/signaling)
+
 ```bash
 npm install signaling
 ```
