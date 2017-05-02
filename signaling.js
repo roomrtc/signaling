@@ -123,7 +123,14 @@ function Signaling(server, options) {
             safeCb(cb)(null, describeRoom(name));
             client.join(name);
             client.room = name;
-            self.emit('join', name, client);
+            var hasListener = self.emit('join', name, client);
+            if (!hasListener) {
+                // send message: ready to call
+                client.emit('ready', {
+                    roomName: name,
+                    pid: client.id
+                });
+            }
         }
 
         function leaveRoom() {
