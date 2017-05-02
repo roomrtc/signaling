@@ -63,3 +63,23 @@ test('it should receive the number of members after join to a room', (t) => {
 
 
 });
+
+test('it should receive an event "ready" after joinRoom successfully', (t) => {
+    var clientA;
+    t.plan(2);
+    Promise.resolve()
+        .then(() => {
+            // client A require to join a pretty room
+            clientA = io.connect(socketUrl, socketOption);
+            clientA.on('connect', () => {
+                clientA.emit('join', 'prettyRoom', (err, roomData) => {
+                    t.equal(roomData.roomName, 'prettyRoom', 'clientA --> join to prettyRoom');
+                });
+            });
+            // wait for an event
+            clientA.on('ready', (data) => {
+                t.equal(data.roomName, 'prettyRoom', 'prettyRoom is ready to call');
+                clientA.emit('bye');
+            });
+        })
+});
