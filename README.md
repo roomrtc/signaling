@@ -73,3 +73,14 @@ signalingServer.on('message', (client, msg) => {
     console.log('server receive message:', msg, client.id);
 });
 ```
+
+Event: 'signalingReady'
+===============
+
+Added in: `v0.10.0`
+
+```js
+signalingServer.on('signalingReady', (httpServer) => {
+    console.log('signaling server is ready');
+});
+```
