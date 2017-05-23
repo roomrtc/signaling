@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const uuid = require('uuid');
 const events = require('eventemitter2');
 
-const logger = require('./logger')('Server');
+const logger = require('./logger')('Master');
 const EventEmitter = events.EventEmitter2;
 
 /**
@@ -39,7 +39,7 @@ class Signaling extends EventEmitter {
         }
 
         if (server != null) {
-            logger.log('start signaling server ...');
+            logger.log('Start signaling server ...');
             this.listen(server);
         }
     }
