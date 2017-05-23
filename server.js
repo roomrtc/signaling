@@ -1,6 +1,6 @@
 var http = require("http"),
     config = require("config"),
-    signaling = require("./signaling");
+    Signaling = require("./signaling");
 
 var port = process.env.PORT || 8123;
 var server = http.createServer(function (req, res) {
@@ -13,5 +13,5 @@ server.listen(port, function () {
 });
 
 // expose signaling server for testing.
-module.exports = signaling(server);
+module.exports = new Signaling(server);
 console.log("Config signaling server is done");
