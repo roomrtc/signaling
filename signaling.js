@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const uuid = require('uuid');
 const events = require('eventemitter2');
 
-const logger = require('./logger')('Master');
+const logger = require('./logger')('Signaling');
 const EventEmitter = events.EventEmitter2;
 
 /**
@@ -47,6 +47,7 @@ class Signaling extends EventEmitter {
     listen(server) {
         this.io = ws.listen(server);
         this.io.sockets.on('connection', this.newConnection.bind(this));
+        this.emit('signalingReady', server);
     }
 
     clientsInRoom(name) {

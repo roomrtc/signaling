@@ -2,7 +2,7 @@
 
 const debug = require('debug');
 
-const NAMESPACE = 'signaling';
+const NAMESPACE = 'roomrtc';
 
 class Logger {
     constructor(prefix) {
