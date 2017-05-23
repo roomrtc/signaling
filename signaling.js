@@ -6,6 +6,7 @@ const crypto = require('crypto');
 const uuid = require('uuid');
 const events = require('eventemitter2');
 
+const logger = require('./logger')('Server');
 const EventEmitter = events.EventEmitter2;
 
 /**
@@ -22,6 +23,7 @@ function safeCb(cb) {
 class Signaling extends EventEmitter {
     constructor(server, options) {
         super();
+        this.io = null;
         this.config = {
             stunservers: [],
             turnservers: [],
@@ -37,10 +39,14 @@ class Signaling extends EventEmitter {
         }
 
         if (server != null) {
-            console.log('start signaling server ...')
-            this.io = ws.listen(server);
-            this.io.sockets.on('connection', this.newConnection.bind(this));
+            logger.log('start signaling server ...');
+            this.listen(server);
         }
+    }
+
+    listen(server) {
+        this.io = ws.listen(server);
+        this.io.sockets.on('connection', this.newConnection.bind(this));
     }
 
     clientsInRoom(name) {
@@ -117,7 +123,7 @@ class Signaling extends EventEmitter {
     }
 
     newConnection(client) {
-        console.log('New connection', client.id);
+        logger.info('New connection:', client.id);
         client.resources = {
             profile: {},
             video: true,
@@ -127,12 +133,12 @@ class Signaling extends EventEmitter {
 
         // send private message to another id
         client.on('message', (msg, cb) => {
-            // console.log('Receive msg: ', msg);
+            logger.info('Receive msg:', msg && msg.type);
             if (!msg) return;
 
             var hasListener = this.emit('message', client, msg, cb);
             if (!hasListener) {
-                console.log('No listener: ', msg);
+                logger.info('No listener, default process:', msg && msg.type);
                 this.processMsgMessage(client, msg, cb);
             }
         });
@@ -218,8 +224,8 @@ class Signaling extends EventEmitter {
     }
 }
 
-module.exports = function(server, options) {
-    return new Signaling(server, options)   ;
+module.exports = function (server, options) {
+    return new Signaling(server, options);
 };
 // backwards compatible signaling@0.11.x
 module.exports.Signaling = Signaling;
