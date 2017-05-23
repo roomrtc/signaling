@@ -77,7 +77,7 @@ signalingServer.on('message', (client, msg) => {
 Event: 'signalingReady'
 ===============
 
-Added in: `v0.10.0`
+Added in: `v1.1.0`
 
 ```js
 signalingServer.on('signalingReady', (httpServer) => {
