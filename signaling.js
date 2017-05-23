@@ -9,48 +9,116 @@ const events = require('eventemitter2');
 const EventEmitter = events.EventEmitter2;
 
 /**
- * Utility
+ * Callback Utility
  */
 function safeCb(cb) {
     if (typeof cb === 'function') {
         return cb;
     } else {
-        return function () {};
+        return () => 1;
     }
 }
 
-function Signaling(server, options) {
-    // check user is missing `new` keyword.
-    if (!(this instanceof Signaling)) {
-        return new Signaling(server, options);
-    }
+class Signaling extends EventEmitter {
+    constructor(server, options) {
+        super();
+        this.config = {
+            stunservers: [],
+            turnservers: [],
+            isMediaServer: false,
+            roomMaxClients: 4
+        }
 
-    // inherits constructor
-    EventEmitter.call(this);
+        // override default config
+        for (let opt in options) {
+            if (options.hasOwnProperty(opt)) {
+                this.config[opt] = options[opt];
+            }
+        }
 
-    // default config
-    this.config = {
-        stunservers: [],
-        turnservers: [],
-        isMediaServer: false,
-        roomMaxClients: 6
-    }
-
-    // override default config
-    for (let opt in options) {
-        if (options.hasOwnProperty(opt)) {
-            this.config[opt] = options[opt];
+        if (server != null) {
+            console.log('start signaling server ...')
+            this.io = ws.listen(server);
+            this.io.sockets.on('connection', this.newConnection.bind(this));
         }
     }
 
-    var self = this;
-    var io = ws.listen(server);
+    clientsInRoom(name) {
+        let adapter = this.io.nsps['/'].adapter;
+        let clients = adapter.rooms[name] || {};
+        return Object.keys(clients).length;
+    }
 
-    self.io = io;
-    self.config = this.config;
+    describeRoom(name) {
+        let adapter = this.io.nsps['/'].adapter;
+        let room = adapter.rooms[name] || {};
+        let sockets = room.sockets || {};
+        let current = Object.keys(sockets).length;
+        let result = {
+            roomName: name,
+            roomCount: current,
+            clients: {}
+        }
 
-    io.sockets.on('connection', function (client) {
+        Object.keys(sockets).forEach((id) => {
+            let client = adapter.nsp.connected[id];
+            if (client) {
+                result.clients[id] = client.resources;
+            }
+        });
+        return result;
+    }
 
+
+    removeFeed(client, type) {
+        if (client.room) {
+            // remove resources type in the room
+            this.io.sockets.in(client.room).emit('remove', {
+                id: client.id,
+                type: type
+            });
+            // leave the room
+            if (!type) {
+                client.leave(client.room);
+                delete client.room;
+            }
+        }
+    }
+
+    joinRoom(client, name, cb) {
+        // sanity check
+        if (typeof name !== 'string') {
+            return safeCb(cb)('name must be a string');
+        }
+
+        // check  max clients in the room
+        var current = this.clientsInRoom(name);
+        var config = this.config;
+        if (config.roomMaxClients > 0 && current >= config.roomMaxClients) {
+            return safeCb(cb)('full');
+        }
+        // leave all rooms
+        this.removeFeed(client);
+        safeCb(cb)(null, this.describeRoom(name));
+        client.join(name);
+        client.room = name;
+        var hasListener = this.emit('join', name, client);
+        if (!hasListener) {
+            // send message: ready to call
+            client.emit('ready', {
+                roomName: name,
+                pid: client.id
+            });
+        }
+    }
+
+    leaveRoom(client) {
+        this.removeFeed(client);
+        this.emit('leave', client, this.clientsInRoom(client.room));
+    }
+
+    newConnection(client) {
+        console.log('New connection', client.id);
         client.resources = {
             profile: {},
             video: true,
@@ -59,97 +127,38 @@ function Signaling(server, options) {
         }
 
         // send private message to another id
-        client.on('message', function (msg, cb) {
+        client.on('message', (msg, cb) => {
+            console.log('Receive msg: ', msg);
             if (!msg) return;
 
-            var hasListener = self.emit('message', client, msg);
+            var hasListener = this.emit('message', client, msg, cb);
             if (!hasListener) {
                 console.log('No listener: ', msg);
-                var toClient = io.to(msg.to);
-                if (!toClient || !msg.to) {
-                    return safeCb(cb)(null, {
-                        type: 'info',
-                        message: 'no specify a client, should send to the room !'
-                    });
-                }
-
-                msg.from = client.id;
-                toClient.emit('message', msg);
-                safeCb(cb)(null, {
-                    type: 'info',
-                    message: 'the message is sent'
-                });
+                this.processMsgMessage(client, msg, cb);
             }
         });
 
-        client.on('shareScreen', function () {
+        client.on('shareScreen', () => {
             client.resources.screen = true;
         });
 
-        client.on('unshareScreen', function (type) {
+        client.on('unshareScreen', (type) => {
             client.resources.screen = false;
-            removeFeed('screen');
+            this.removeFeed(client, 'screen');
         });
-
-        function removeFeed(type) {
-            if (client.room) {
-                // remove resources type in the room
-                io.sockets.in(client.room).emit('remove', {
-                    id: client.id,
-                    type: type
-                });
-                // leave the room
-                if (!type) {
-                    client.leave(client.room);
-                    delete client.room;
-                }
-            }
-        }
-
-        function joinRoom(name, cb) {
-            // sanity check
-            if (typeof name !== 'string') {
-                return safeCb(cb)('name must be a string');
-            }
-
-            // check  max clients in the room
-            var current = clientsInRoom(name);
-            var config = self.config;
-            if (config.roomMaxClients > 0 && current >= config.roomMaxClients) {
-                return safeCb(cb)('full');
-            }
-            // leave all rooms
-            removeFeed();
-            safeCb(cb)(null, describeRoom(name));
-            client.join(name);
-            client.room = name;
-            var hasListener = self.emit('join', name, client);
-            if (!hasListener) {
-                // send message: ready to call
-                client.emit('ready', {
-                    roomName: name,
-                    pid: client.id
-                });
-            }
-        }
-
-        function leaveRoom() {
-            removeFeed();
-            self.emit('leave', client, clientsInRoom(client.room));
-        }
 
         /**
          * Event: join, leave, disconnect
          */
-        client.on('join', joinRoom);
-        client.on('leave', leaveRoom);
-        client.on('bye', leaveRoom);
+        client.on('join', this.joinRoom.bind(this, client));
+        client.on('leave', this.leaveRoom.bind(this, client));
+        client.on('bye', this.leaveRoom.bind(this, client));
 
         // we don't want to pass 'leave' directly because the
         // event type string of 'socket end' gets passed too.
-        client.on('disconnect', leaveRoom);
+        client.on('disconnect', this.leaveRoom.bind(this, client));
 
-        client.on('create', function (name, cb) {
+        client.on('create', (name, cb) => {
             name = name || uuid.v4();
 
             // check room is exists
@@ -157,8 +166,7 @@ function Signaling(server, options) {
             if (room && room.length) {
                 safeCb(cb)('taken');
             } else {
-                joinRoom(name);
-                safeCb(cb)(null, name);
+                this.joinRoom(client, name, cb);
             }
         });
 
@@ -166,7 +174,7 @@ function Signaling(server, options) {
         // the process is described in draft-uberti-behave-turn-rest
         var credentials = [];
         // allow selectively vending turn credentials based on origin.
-        var config = self.config;
+        var config = this.config;
         var origin = client.handshake.headers.origin;
         if (!config.turnorigins || config.turnorigins.indexOf(origin) !== -1) {
             var turnservers = config.turnservers || [];
@@ -190,39 +198,25 @@ function Signaling(server, options) {
 
         // notify client about stun and turn servers
         client.emit('iceservers', iceInfo);
-        self.emit('connection', client);
-    });
-
-
-    function clientsInRoom(name) {
-        // return io.sockets.clients(name).length;
-        var adapter = io.nsps['/'].adapter;
-        var clients = adapter.rooms[name] || {};
-        return Object.keys(clients).length;
+        this.emit('connection', client);
     }
 
-    function describeRoom(name) {
-        var adapter = io.nsps['/'].adapter;
-        var room = adapter.rooms[name] || {};
-        var sockets = room.sockets || {};
-        var current = Object.keys(sockets).length;
-        var result = {
-            roomName: name,
-            roomCount: current,
-            clients: {}
+    processMsgMessage(client, msg, cb) {
+        var toClient = this.io.to(msg.to);
+        if (!toClient || !msg.to) {
+            return safeCb(cb)(null, {
+                type: 'info',
+                message: 'no specify a client, should send to the room !'
+            });
         }
 
-        Object.keys(sockets).forEach(function (id) {
-            var client = adapter.nsp.connected[id];
-            if (client) {
-                result.clients[id] = client.resources;
-            }
+        msg.from = client.id;
+        toClient.emit('message', msg);
+        safeCb(cb)(null, {
+            type: 'info',
+            message: 'the message is sent'
         });
-        return result;
     }
 }
 
-util.inherits(Signaling, EventEmitter);
-
-Signaling.Signaling = Signaling;
 module.exports = Signaling;
