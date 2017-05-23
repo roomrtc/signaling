@@ -69,7 +69,6 @@ class Signaling extends EventEmitter {
         return result;
     }
 
-
     removeFeed(client, type) {
         if (client.room) {
             // remove resources type in the room
@@ -128,7 +127,7 @@ class Signaling extends EventEmitter {
 
         // send private message to another id
         client.on('message', (msg, cb) => {
-            console.log('Receive msg: ', msg);
+            // console.log('Receive msg: ', msg);
             if (!msg) return;
 
             var hasListener = this.emit('message', client, msg, cb);
@@ -219,4 +218,8 @@ class Signaling extends EventEmitter {
     }
 }
 
-module.exports = Signaling;
+module.exports = function(server, options) {
+    return new Signaling(server, options)   ;
+};
+// backwards compatible signaling@0.11.x
+module.exports.Signaling = Signaling;
