@@ -21,11 +21,11 @@ Use with express
 
 ```js
 const express = require('express');
-const Signaling = require('signaling');
+const signaling = require('signaling');
 
 const app = express();
 const server = app.listen(port);
-const signalingServer = new Signaling(server);
+const signalingServer = signaling(server);
 ```
 
 Class: Signaling
@@ -35,7 +35,7 @@ Added in: `v0.10.0`
 The `Signaling` class is defined and exposed by the `signaling` module:
 
 ```js
-const Signaling = require('signaling');
+const Signaling = require('signaling').Signaling;
 const signalingServer = new Signaling([httpServer, options]);
 ```
 

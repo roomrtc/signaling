@@ -1,6 +1,6 @@
 {
   "name": "signaling",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A simple signaling server for RoomRTC",
   "main": "index.js",
   "scripts": {
