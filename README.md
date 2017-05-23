@@ -21,11 +21,11 @@ Use with express
 
 ```js
 const express = require('express');
-const signaling = require('signaling');
+const Signaling = require('signaling');
 
 const app = express();
 const server = app.listen(port);
-const signalingServer = signaling(server);
+const signalingServer = new Signaling(server);
 ```
 
 Class: Signaling
@@ -36,6 +36,7 @@ The `Signaling` class is defined and exposed by the `signaling` module:
 
 ```js
 const Signaling = require('signaling');
+const signalingServer = new Signaling([httpServer, options]);
 ```
 
 An event `connection` is going to emit when new client is connected and event `leave` when the connection has gone.
