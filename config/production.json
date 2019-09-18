@@ -1,9 +1,0 @@
-{
-    "rooms": {
-        "maxClients": 6,
-        "credit": {
-            "initialLimit": 100,
-            "initialDays": 1
-        }
-    }
-}
